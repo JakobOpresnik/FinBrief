@@ -42,8 +42,8 @@ FinBrief is a self-hosted desktop application that automates salary payslip proc
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/JakobOpresnik/finbrief.git
-   cd finbrief
+   git clone https://github.com/JakobOpresnik/FinBrief.git
+   cd FinBrief
    ```
 
 2. **Create and activate a Python virtual environment**
