@@ -23,7 +23,7 @@ class Config:
     gmail_subject_keyword: str
 
     # PDF
-    pdf_password: str
+    pdf_password: str | None
 
     # Storage
     save_base_path: str
@@ -50,7 +50,7 @@ class Config:
             gmail_app_password=_require("GMAIL_APP_PASSWORD"),
             gmail_sender_filter=_require("GMAIL_SENDER_FILTER"),
             gmail_subject_keyword=os.getenv("GMAIL_SUBJECT_KEYWORD", "Plača za mesec"),
-            pdf_password=_require("PDF_PASSWORD"),
+            pdf_password=os.getenv("PDF_PASSWORD") or None,
             save_base_path=os.getenv("SAVE_BASE_PATH", r"C:\Acex\zaposlitev\placa"),
             employee_name=_require("EMPLOYEE_NAME"),
             employee_surname=_require("EMPLOYEE_SURNAME"),

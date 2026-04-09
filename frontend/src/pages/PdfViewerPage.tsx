@@ -23,12 +23,26 @@ export function PdfViewerPage() {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [isEncrypted, setIsEncrypted] = useState<boolean | null>(null);
 
+  // Check if PDF is encrypted and load settings password
   useEffect(() => {
-    api.getSettings().then((res) => {
-      setCorrectPassword(res.values["PDF_PASSWORD"] ?? "");
+    const idx = Number(index);
+    Promise.all([
+      api.checkPdfEncrypted(idx),
+      api.getSettings(),
+    ]).then(([encResult, settings]) => {
+      setCorrectPassword(settings.values["PDF_PASSWORD"] ?? "");
+      setIsEncrypted(encResult.encrypted);
+
+      if (!encResult.encrypted) {
+        setLoading(true);
+        api.fetchPdf(idx)
+          .then(setBlobUrl)
+          .finally(() => setLoading(false));
+      }
     });
-  }, []);
+  }, [index]);
 
   useEffect(() => {
     return () => {
@@ -48,13 +62,13 @@ export function PdfViewerPage() {
 
   // Auto-open PDF when correct password is typed
   useEffect(() => {
-    if (isCorrect && !blobUrl && !loading) {
+    if (isEncrypted && isCorrect && !blobUrl && !loading) {
       setLoading(true);
       api.fetchPdf(Number(index), password)
         .then(setBlobUrl)
         .finally(() => setLoading(false));
     }
-  }, [isCorrect, blobUrl, loading, index, password]);
+  }, [isEncrypted, isCorrect, blobUrl, loading, index, password]);
 
   const handleDownload = useCallback(async () => {
     setDownloading(true);
@@ -68,7 +82,7 @@ export function PdfViewerPage() {
     });
 
     try {
-      const result = await api.saveAs(Number(index), password);
+      const result = await api.saveAs(Number(index), isEncrypted ? password : undefined);
 
       if (result.status === "cancelled") {
         notifications.update({
@@ -115,7 +129,7 @@ export function PdfViewerPage() {
     } finally {
       setDownloading(false);
     }
-  }, [index, password]);
+  }, [index, password, isEncrypted]);
 
   return (
     <Stack h="calc(100vh - 40px)">
@@ -138,7 +152,9 @@ export function PdfViewerPage() {
         )}
       </Group>
 
-      {!blobUrl ? (
+      {isEncrypted === null || (isEncrypted === false && loading) ? (
+        <Loader size="sm" color="#12b886" />
+      ) : !blobUrl && isEncrypted ? (
         <Paper p="xl" radius="md" withBorder maw={400}>
           <Stack>
             <Text size="sm">This document is password-protected.</Text>
@@ -151,7 +167,7 @@ export function PdfViewerPage() {
             {loading && <Loader size="sm" color="#12b886" />}
           </Stack>
         </Paper>
-      ) : (
+      ) : blobUrl ? (
         <object
           data={blobUrl}
           type="application/pdf"
@@ -159,7 +175,7 @@ export function PdfViewerPage() {
         >
           <Text>PDF preview not available.</Text>
         </object>
-      )}
+      ) : null}
     </Stack>
   );
 }

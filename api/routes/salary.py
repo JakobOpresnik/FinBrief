@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from api.schemas import SalaryRecord
 from config import Config
 from models import SalaryData
-from pdf_processor import build_save_path, decrypt_pdf, PDFDecryptionError
+from pdf_processor import build_save_path, decrypt_pdf, is_pdf_encrypted, PDFDecryptionError
 from state import get_salary_history, is_empty, load_state, remove_salary_records, save_state
 
 router: APIRouter = APIRouter()
@@ -71,7 +71,7 @@ def get_salary_raw(index: int) -> dict:
 
 
 class PdfUnlockRequest(BaseModel):
-    password: str
+    password: str | None = None
 
 
 class DeleteRequest(BaseModel):
@@ -145,6 +145,23 @@ def rename_salary_record(index: int, body: RenameRequest) -> dict[str, str]:
     return {"status": "renamed"}
 
 
+@router.get("/salary/{index}/pdf/encrypted")
+def check_pdf_encrypted(index: int) -> dict[str, bool]:
+    all_records = _get_records()
+    if index < 0 or index >= len(all_records):
+        raise HTTPException(status_code=404, detail="Record not found")
+
+    _, _, path = all_records[index]
+
+    if not os.path.exists(path):
+        raise HTTPException(status_code=404, detail=f"PDF not found at {path}")
+
+    with open(path, "rb") as f:
+        raw_bytes: bytes = f.read()
+
+    return {"encrypted": is_pdf_encrypted(raw_bytes)}
+
+
 @router.post("/salary/{index}/pdf")
 def get_salary_pdf(index: int, body: PdfUnlockRequest) -> Response:
     all_records = _get_records()
@@ -159,20 +176,25 @@ def get_salary_pdf(index: int, body: PdfUnlockRequest) -> Response:
     with open(path, "rb") as f:
         raw_bytes: bytes = f.read()
 
-    try:
-        decrypted: bytes = decrypt_pdf(raw_bytes, body.password)
-    except PDFDecryptionError:
-        raise HTTPException(status_code=403, detail="Wrong password")
+    if is_pdf_encrypted(raw_bytes):
+        if not body.password:
+            raise HTTPException(status_code=403, detail="Password required")
+        try:
+            pdf_bytes: bytes = decrypt_pdf(raw_bytes, body.password)
+        except PDFDecryptionError:
+            raise HTTPException(status_code=403, detail="Wrong password")
+    else:
+        pdf_bytes = raw_bytes
 
     return Response(
-        content=decrypted,
+        content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'inline; filename="{os.path.basename(path)}"'},
     )
 
 
 class SaveAsRequest(BaseModel):
-    password: str
+    password: str | None = None
 
 
 def _show_save_dialog(default_name: str) -> str | None:
@@ -207,10 +229,15 @@ def save_pdf_as(index: int, body: SaveAsRequest) -> dict[str, str | None]:
     with open(path, "rb") as f:
         raw_bytes: bytes = f.read()
 
-    try:
-        decrypted: bytes = decrypt_pdf(raw_bytes, body.password)
-    except PDFDecryptionError:
-        raise HTTPException(status_code=403, detail="Wrong password")
+    if is_pdf_encrypted(raw_bytes):
+        if not body.password:
+            raise HTTPException(status_code=403, detail="Password required")
+        try:
+            decrypted: bytes = decrypt_pdf(raw_bytes, body.password)
+        except PDFDecryptionError:
+            raise HTTPException(status_code=403, detail="Wrong password")
+    else:
+        decrypted = raw_bytes
 
     default_name: str = os.path.basename(path)
     save_path: str | None = _show_save_dialog(default_name)

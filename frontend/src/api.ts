@@ -88,11 +88,14 @@ export const api = {
       body: JSON.stringify({ indices, delete_files: deleteFiles }),
     }),
 
-  fetchPdf: async (index: number, password: string): Promise<string> => {
+  checkPdfEncrypted: (index: number) =>
+    fetchJson<{ encrypted: boolean }>(`/salary/${index}/pdf/encrypted`),
+
+  fetchPdf: async (index: number, password?: string): Promise<string> => {
     const res = await fetch(`${BASE}/salary/${index}/pdf`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password: password ?? null }),
     });
     if (res.status === 403) throw new Error("Wrong password");
     if (!res.ok) throw new Error(`${res.status}: ${res.statusText}`);
@@ -100,11 +103,11 @@ export const api = {
     return URL.createObjectURL(blob);
   },
 
-  saveAs: (index: number, password: string) =>
+  saveAs: (index: number, password?: string) =>
     fetchJson<{ status: string; path: string | null }>(`/salary/${index}/save-as`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password: password ?? null }),
     }),
 
   openFile: (path: string) =>

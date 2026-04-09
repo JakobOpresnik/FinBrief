@@ -19,6 +19,7 @@ from pdf_processor import (
     PDFTextExtractionError,
     decrypt_pdf,
     extract_text,
+    is_pdf_encrypted,
     save_pdf,
 )
 from state import get_salary_history, is_processed, load_state, mark_processed, save_state
@@ -73,11 +74,17 @@ def run_pipeline() -> None:
         for filename, pdf_bytes in attachments:
             logger.info("Processing attachment: %s", filename)
 
-            try:
-                decrypted: bytes = decrypt_pdf(pdf_bytes, config.pdf_password)
-            except PDFDecryptionError:
-                logger.exception("Failed to decrypt %s — skipping", filename)
-                continue
+            if is_pdf_encrypted(pdf_bytes):
+                if not config.pdf_password:
+                    logger.warning("PDF %s is encrypted but no PDF_PASSWORD is set — skipping", filename)
+                    continue
+                try:
+                    decrypted: bytes = decrypt_pdf(pdf_bytes, config.pdf_password)
+                except PDFDecryptionError:
+                    logger.exception("Failed to decrypt %s — skipping", filename)
+                    continue
+            else:
+                decrypted = pdf_bytes
 
             try:
                 text: str = extract_text(decrypted)

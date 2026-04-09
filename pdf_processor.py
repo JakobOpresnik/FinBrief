@@ -18,6 +18,16 @@ class PDFTextExtractionError(Exception):
     pass
 
 
+def is_pdf_encrypted(pdf_bytes: bytes) -> bool:
+    try:
+        pikepdf.open(io.BytesIO(pdf_bytes))
+        return False
+    except pikepdf.PasswordError:
+        return True
+    except pikepdf.PdfError:
+        return False
+
+
 def decrypt_pdf(pdf_bytes: bytes, password: str) -> bytes:
     try:
         reader = pikepdf.open(io.BytesIO(pdf_bytes), password=password)
