@@ -42,7 +42,7 @@ FinBrief is a self-hosted desktop application that automates salary payslip proc
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/<YOUR-USERNAME>/finbrief.git
+   git clone https://github.com/JakobOpresnik/finbrief.git
    cd finbrief
    ```
 
@@ -50,8 +50,10 @@ FinBrief is a self-hosted desktop application that automates salary payslip proc
 
    ```bash
    python -m venv .venv
+
    # Windows
    .venv\Scripts\activate
+
    # macOS / Linux
    source .venv/bin/activate
    ```
@@ -91,7 +93,7 @@ FinBrief is a self-hosted desktop application that automates salary payslip proc
 
    # File storage
    SAVE_BASE_PATH=C:/Users/you/Documents/Payslips
-   EMPLOYEE_NAME=Jane
+   EMPLOYEE_NAME=John
    EMPLOYEE_SURNAME=Doe
    FILENAME_PATTERN={name}_{surname}_{month}_{year}
 
@@ -99,9 +101,19 @@ FinBrief is a self-hosted desktop application that automates salary payslip proc
    NTFY_TOPIC=finbrief-your-unique-topic
    ```
 
-6. **Place your LLM model**
+6. **Download the LLM model**
 
-   Download a `.gguf` model (e.g. from [Hugging Face](https://huggingface.co/models)) and place it in the `models/` directory. Set `LLM_MODEL_PATH` accordingly.
+   The app uses [Qwen2.5 3B Instruct (Q4_K_M)](https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF) — a fast, lightweight model that runs well on CPU. Download it directly into the `models/` directory:
+
+   ```bash
+   curl -L -o models/qwen2.5-3b-instruct-q4_k_m.gguf https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/main/qwen2.5-3b-instruct-q4_k_m.gguf
+   ```
+
+   Make sure your `.env` has:
+
+   ```env
+   LLM_MODEL_PATH=models/qwen2.5-3b-instruct-q4_k_m.gguf
+   ```
 
 7. **Run the app**
 
