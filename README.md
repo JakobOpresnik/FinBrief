@@ -131,14 +131,20 @@ FinBrief connects to Gmail via IMAP using an **App Password** — a special one-
    FinBrief uses [ntfy.sh](https://ntfy.sh) — a free, open-source push notification service — to send salary summaries and anomaly alerts straight to your phone.
 
    **On your phone:**
-   1. Install the **ntfy** app — [Android (Play Store)](https://play.google.com/store/apps/details?id=io.heckel.ntfy) or [iOS (App Store)](https://apps.apple.com/app/ntfy/id1625396347). You can also open [ntfy.sh/#download](https://ntfy.sh/#download) in your browser and scan the QR code with your phone to go straight to the correct store.
-   2. Open the app and tap the **+** button to subscribe to a new topic.
-   3. Enter a topic name that is unique and hard to guess (e.g. `finbrief-john-doe-2024`). Anyone who knows your topic name can read your notifications, so avoid obvious names.
-   4. Tap **Subscribe**.
 
-   **In FinBrief:**
-   5. Set `NTFY_TOPIC` in your `.env` to the exact same topic name you entered in step 3.
-   6. Alternatively, open **Settings** inside the app and enter the topic name in the _Notifications_ section — no restart needed.
+   **1\.** Install the **ntfy** app — [Android (Play Store)](https://play.google.com/store/apps/details?id=io.heckel.ntfy) or [iOS (App Store)](https://apps.apple.com/app/ntfy/id1625396347). You can also open [ntfy.sh/#download](https://ntfy.sh/#download) in your browser and scan the QR code with your phone to go straight to the correct store.
+
+   **2\.** Open the app and tap the **+** button to subscribe to a new topic.
+
+   **3\.** Enter a topic name that is unique and hard to guess (e.g. `finbrief-john-doe-2024`). Anyone who knows your topic name can read your notifications, so avoid obvious names.
+
+   **4\.** Tap **Subscribe**.
+
+   **...then in FinBrief:**
+
+   **5\.** Set `NTFY_TOPIC` in your `.env` to the exact same topic name you entered in step 3.
+
+   **6\.** Alternatively, open **Settings** inside the app and enter the topic name in the _Notifications_ section — no restart needed.
 
    From that point on, every time the pipeline runs, FinBrief will POST a notification to `https://ntfy.sh/<your-topic>` and it will appear on your phone instantly. Each notification includes the take-home breakdown, gross pay, and saved file path. Anomaly alerts are triggered when net or gross pay deviates more than 10% from your recent average, when an individual deduction spikes more than 50% above its recent average, or when a new deduction category appears for the first time.
 
@@ -156,17 +162,20 @@ FinBrief connects to Gmail via IMAP using an **App Password** — a special one-
    LLM_MODEL_PATH=models/qwen2.5-3b-instruct-q4_k_m.gguf
    ```
 
-8. **Run the app**
+<<<<<<< HEAD 8. **Run the app**
+======= 9. **Run the app**
 
-   ```bash
-   python app.py
-   ```
+> > > > > > > 3065efa1d53520d0f42777c42d9256c5c2529946
 
-   The app opens in a native desktop window. To run in dev mode (API only, no window):
+```bash
+python app.py
+```
 
-   ```bash
-   python app.py --dev
-   ```
+The app opens in a native desktop window. To run in dev mode (API only, no window):
+
+```bash
+python app.py --dev
+```
 
 ## 🧪 Running Tests
 
