@@ -6,8 +6,8 @@ token.json
 # State
 processed_emails.json
 
-# Testing
-testing/
+# Downloaded documents (pipeline output)
+downloads/
 
 # TODOs
 TODOs.txt
