@@ -9,6 +9,9 @@ processed_emails.json
 # Testing
 testing/
 
+# TODOs
+TODOs.txt
+
 # Models
 models/*.gguf
 
