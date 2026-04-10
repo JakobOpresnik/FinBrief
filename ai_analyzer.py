@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 from statistics import mean
 
 from llama_cpp import Llama
@@ -13,65 +14,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 _model: Llama | None = None
 
-EXTRACTION_PROMPT: str = """\
-You are an expert Slovenian payroll document parser. Extract salary data from the payslip text below.
-
-== BONUSES (pribitki / dodatki) — CRITICAL RULES ==
-The payslip has a clearly delimited bonuses section. It ends with a subtotal line such as:
-  "Skupaj pribitki" or "Skupaj dodatki" followed by the total amount.
-
-You MUST:
-1. Find the "Skupaj pribitki" subtotal line and read its amount — that is total_bonuses.
-2. Only include in "bonuses" the individual line items that appear ABOVE that subtotal line.
-   Typical items are "Povračilo stroškov do uredbe vlade – prevoz" (transport) and
-   "Povračilo stroškov do uredbe vlade – prehrana" (meals), but extract whatever IS there.
-3. CRITICAL: Do NOT include the subtotal line itself ("Skupaj pribitki" / "Skupaj dodatki") as an
-   entry in the bonuses object. It is only used to set total_bonuses.
-4. VERIFY: the sum of all bonuses values must equal total_bonuses exactly. If it does not, recheck
-   your extracted items — you likely included the subtotal line as an item by mistake.
-5. NEVER add any bonus that is not in that section. Do NOT include "Regres", "Dodatek za delovno dobo",
-   or any other item unless it is literally listed in the pribitki section of this specific document.
-6. If the pribitki section is absent or the total is 0, set bonuses to {} and total_bonuses to 0.0.
-
-== DEDUCTIONS (odbitki / prispevki delojemalca) — CRITICAL RULES ==
-The payslip has a clearly delimited deductions section. It typically ends with a subtotal such as:
-  "Skupaj prispevki delavca" or "Skupaj odbitki" followed by the total.
-
-You MUST:
-1. Find that subtotal line — that is total_deductions.
-2. Only include in "deductions" the individual line items that appear in that section and add up to it.
-   Do NOT include the subtotal line itself (e.g. "Skupaj prispevki delavca") as a separate entry.
-3. Do NOT include employer contributions or any amounts outside the employee deductions section.
-
-== FIELD RECOGNITION GUIDE ==
-- BRUTO PLAČA / Bruto znesek = gross_pay
-- NETO PLAČA / Neto znesek / Za izplačilo = net_pay (must be LESS than gross_pay)
-- Akontacija dohodnine / Dohodnina = income tax deduction
-- Prispevek za pokojninsko in invalidsko zavarovanje = pension contribution
-- Prispevek za zdravstveno zavarovanje = health insurance contribution
-- Prispevek za zaposlovanje = employment contribution
-- Prispevek za starševsko varstvo = parental protection contribution
-- Prispevek za dolgotrajno oskrbo = long-term care contribution
-
-Return ONLY a JSON object with these exact fields:
-- net_pay: float
-- gross_pay: float
-- month: int — from the pay PERIOD, not the issue date
-- year: int
-- month_name_slovenian: string — lowercase (januar, februar, marec, april, maj, junij, julij, avgust, september, oktober, november, december)
-- deductions: object — keys are item names, values are amounts
-- bonuses: object — keys are item names, values are amounts
-- total_deductions: float — must equal sum of deductions values
-- total_bonuses: float — must equal sum of bonuses values (verify against "Skupaj pribitki")
-
-General rules:
-- All amounts must be floats, never strings
-- ONLY include what is literally written in the document — do NOT infer or fabricate
-- If a value cannot be read with certainty, use 0.0
-
-Payslip text:
----
-"""
+EXTRACTION_PROMPT: str = (Path(__file__).parent / "prompts" / "salary_extraction.txt").read_text(encoding="utf-8")
 
 
 def _get_model(config: Config) -> Llama:
