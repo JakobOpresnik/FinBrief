@@ -170,6 +170,20 @@ FinBrief connects to Gmail via IMAP using an **App Password** — a special one-
    python app.py --dev
    ```
 
+## 🧪 Running Tests
+
+Run all tests from the project root (with the virtual environment activated):
+
+```bash
+pytest tests/
+```
+
+For verbose output showing each individual test name and result:
+
+```bash
+pytest tests/ -v
+```
+
 ## 🚀 Usage
 
 - **Dashboard** — view, sort, and filter payslips by year; hover deductions/bonuses columns for a breakdown; select multiple records for bulk delete; rename any record with a custom label; open the raw JSON data for any record
