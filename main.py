@@ -23,7 +23,7 @@ from pdf_processor import (
     is_pdf_encrypted,
     save_pdf,
 )
-from state import get_salary_history, is_processed, load_state, mark_processed, save_state
+from state import AppState, get_salary_history, is_processed, load_state, mark_processed, save_state
 from notifier import notify
 
 logger: logging.Logger = logging.getLogger("finbrief")
@@ -42,7 +42,7 @@ def setup_logging() -> None:
 
 def run_pipeline(cancel_event: threading.Event | None = None) -> None:
     config: Config = Config.load()
-    state: dict = load_state(config.state_file_path)
+    state: AppState = load_state(config.state_file_path)
 
     logger.info("Connecting to Gmail via IMAP...")
     imap = connect(config)

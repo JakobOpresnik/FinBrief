@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Final
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,7 +15,7 @@ from api.scheduler import init_scheduler, shutdown_scheduler
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-FRONTEND_DIR: Path = Path(__file__).parent.parent / "frontend" / "dist"
+FRONTEND_DIR: Final[Path] = Path(__file__).parent.parent / "frontend" / "dist"
 
 
 @asynccontextmanager

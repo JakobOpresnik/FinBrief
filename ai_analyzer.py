@@ -4,6 +4,7 @@ import json
 import logging
 from pathlib import Path
 from statistics import mean
+from typing import Final
 
 from llama_cpp import Llama
 
@@ -14,7 +15,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 _model: Llama | None = None
 
-EXTRACTION_PROMPT: str = (Path(__file__).parent / "prompts" / "salary_extraction.txt").read_text(encoding="utf-8")
+EXTRACTION_PROMPT: Final[str] = (Path(__file__).parent / "prompts" / "salary_extraction.txt").read_text(encoding="utf-8")
 
 
 def _get_model(config: Config) -> Llama:

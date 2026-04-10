@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
-from typing import Any
+from typing import TypeAlias
 
 from config import Config
 from models import SalaryData
 from pdf_processor import build_save_path
 from state import (
+    AppState,
     get_salary_history,
     is_empty,
     load_state,
@@ -14,23 +15,25 @@ from state import (
     save_state,
 )
 
+RecordTuple: TypeAlias = tuple[int, SalaryData, str]
 
-def get_records(config: Config) -> list[tuple[int, SalaryData, str]]:
+
+def get_records(config: Config) -> list[RecordTuple]:
     """Return all records as (index, data, pdf_path) tuples."""
-    state = load_state(config.state_file_path)
+    state: AppState = load_state(config.state_file_path)
     history: list[SalaryData] = get_salary_history(state)
     return [(i, s, build_save_path(config, s)) for i, s in enumerate(history)]
 
 
 def delete_record(config: Config, index: int) -> bool:
     """Delete a single record and its PDF. Returns True if the state file was fully wiped."""
-    state = load_state(config.state_file_path)
-    history = get_salary_history(state)
+    state: AppState = load_state(config.state_file_path)
+    history: list[SalaryData] = get_salary_history(state)
 
     if index < 0 or index >= len(history):
         raise IndexError(f"Record index {index} out of range")
 
-    path = build_save_path(config, history[index])
+    path: str = build_save_path(config, history[index])
     if os.path.exists(path):
         os.remove(path)
 
@@ -40,13 +43,13 @@ def delete_record(config: Config, index: int) -> bool:
 
 def bulk_delete_records(config: Config, indices: list[int], delete_files: bool) -> bool:
     """Delete multiple records. Returns True if the state file was fully wiped."""
-    state = load_state(config.state_file_path)
-    history = get_salary_history(state)
+    state: AppState = load_state(config.state_file_path)
+    history: list[SalaryData] = get_salary_history(state)
 
     if delete_files:
         for idx in indices:
             if 0 <= idx < len(history):
-                path = build_save_path(config, history[idx])
+                path: str = build_save_path(config, history[idx])
                 if os.path.exists(path):
                     os.remove(path)
 
@@ -56,8 +59,8 @@ def bulk_delete_records(config: Config, indices: list[int], delete_files: bool) 
 
 def rename_record(config: Config, index: int, name: str) -> None:
     """Set or clear the custom label on a record."""
-    state = load_state(config.state_file_path)
-    history: list[dict[str, Any]] = state.get("salary_history", [])
+    state: AppState = load_state(config.state_file_path)
+    history = state.get("salary_history", [])
 
     if index < 0 or index >= len(history):
         raise IndexError(f"Record index {index} out of range")
@@ -66,7 +69,7 @@ def rename_record(config: Config, index: int, name: str) -> None:
     save_state(state, config.state_file_path)
 
 
-def _persist_or_wipe(state: dict[str, Any], config: Config) -> bool:
+def _persist_or_wipe(state: AppState, config: Config) -> bool:
     """Save state if records remain; delete the state file if empty. Returns True if wiped."""
     if is_empty(state):
         if os.path.exists(config.state_file_path):

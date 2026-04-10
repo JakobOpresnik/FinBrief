@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import os
 from collections import deque
+from typing import Final
 
 from fastapi import APIRouter, Query
 
 router: APIRouter = APIRouter()
 
-LOG_FILE: str = "finbrief.log"
+LOG_FILE: Final[str] = "finbrief.log"
 
 
 @router.get("/logs")

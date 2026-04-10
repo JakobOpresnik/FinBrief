@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import Final
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
@@ -12,8 +13,8 @@ from api.schemas import ScheduleConfig
 
 logger: logging.Logger = logging.getLogger(__name__)
 
-SCHEDULE_PATH: Path = Path(__file__).parent.parent / "schedule.json"
-JOB_ID: str = "finbrief_pipeline"
+SCHEDULE_PATH: Final[Path] = Path(__file__).parent.parent / "schedule.json"
+JOB_ID: Final[str] = "finbrief_pipeline"
 
 _scheduler: BackgroundScheduler | None = None
 

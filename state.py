@@ -3,22 +3,27 @@ from __future__ import annotations
 import json
 import os
 import tempfile
-from typing import Any
+from typing import Any, TypedDict
 
 from models import SalaryData
 
 
-def load_state(state_file: str) -> dict[str, Any]:
+class AppState(TypedDict):
+    processed_ids: list[str]
+    salary_history: list[dict[str, Any]]
+
+
+def load_state(state_file: str) -> AppState:
     if not os.path.exists(state_file):
-        return {"processed_ids": [], "salary_history": []}
+        return AppState(processed_ids=[], salary_history=[])
     try:
         with open(state_file, "r", encoding="utf-8") as f:
             return json.load(f)
     except (json.JSONDecodeError, OSError):
-        return {"processed_ids": [], "salary_history": []}
+        return AppState(processed_ids=[], salary_history=[])
 
 
-def save_state(state: dict[str, Any], state_file: str) -> None:
+def save_state(state: AppState, state_file: str) -> None:
     dir_name: str = os.path.dirname(os.path.abspath(state_file))
     fd, tmp_path = tempfile.mkstemp(dir=dir_name, suffix=".tmp")
     try:
@@ -31,12 +36,12 @@ def save_state(state: dict[str, Any], state_file: str) -> None:
         raise
 
 
-def is_processed(state: dict[str, Any], email_id: str) -> bool:
+def is_processed(state: AppState, email_id: str) -> bool:
     return email_id in state["processed_ids"]
 
 
 def mark_processed(
-    state: dict[str, Any],
+    state: AppState,
     email_id: str,
     salary_data: SalaryData | None = None,
     raw_text: str | None = None,
@@ -50,12 +55,12 @@ def mark_processed(
         state["salary_history"].append(entry)
 
 
-def get_salary_history(state: dict[str, Any]) -> list[SalaryData]:
+def get_salary_history(state: AppState) -> list[SalaryData]:
     return [SalaryData.model_validate(entry) for entry in state.get("salary_history", [])]
 
 
-def remove_salary_records(state: dict[str, Any], indices: list[int]) -> None:
-    history: list[dict] = state.get("salary_history", [])
+def remove_salary_records(state: AppState, indices: list[int]) -> None:
+    history: list[dict[str, Any]] = state.get("salary_history", [])
     processed_ids: list[str] = state.get("processed_ids", [])
     for idx in sorted(indices, reverse=True):
         if 0 <= idx < len(history):
@@ -66,5 +71,5 @@ def remove_salary_records(state: dict[str, Any], indices: list[int]) -> None:
     state["processed_ids"] = processed_ids
 
 
-def is_empty(state: dict[str, Any]) -> bool:
+def is_empty(state: AppState) -> bool:
     return len(state.get("salary_history", [])) == 0 and len(state.get("processed_ids", [])) == 0

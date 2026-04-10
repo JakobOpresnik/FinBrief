@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import threading
 from datetime import datetime
+from typing import TypedDict
 
 from fastapi import APIRouter, HTTPException
 
@@ -9,8 +10,16 @@ from api.schemas import PipelineStatus
 
 router: APIRouter = APIRouter()
 
+
+class _PipelineStatus(TypedDict):
+    running: bool
+    last_run: str | None
+    last_result: str | None
+    started_at: str | None
+
+
 _cancel_event: threading.Event = threading.Event()
-_status: dict[str, str | bool | None] = {
+_status: _PipelineStatus = {
     "running": False,
     "last_run": None,
     "last_result": None,

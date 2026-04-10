@@ -3,11 +3,12 @@ from __future__ import annotations
 import os
 import tempfile
 from pathlib import Path
+from typing import Final
 
-ENV_PATH: Path = Path(__file__).parent.parent / ".env"
+ENV_PATH: Final[Path] = Path(__file__).parent.parent / ".env"
 
-MASKED_VALUE: str = "••••••••"
-SENSITIVE_KEYS: set[str] = {"GMAIL_APP_PASSWORD", "PDF_PASSWORD"}
+MASKED_VALUE: Final[str] = "••••••••"
+SENSITIVE_KEYS: Final[set[str]] = {"GMAIL_APP_PASSWORD", "PDF_PASSWORD"}
 
 
 def read_env() -> dict[str, str]:

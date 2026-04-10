@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from typing import Final
+
 from pydantic import BaseModel
 
 
-SLOVENIAN_MONTHS: dict[int, str] = {
+SLOVENIAN_MONTHS: Final[dict[int, str]] = {
     1: "januar",
     2: "februar",
     3: "marec",
