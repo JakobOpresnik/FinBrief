@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ctypes
 import threading
 from datetime import datetime
 
@@ -10,6 +9,7 @@ from api.schemas import PipelineStatus
 
 router: APIRouter = APIRouter()
 
+_cancel_event: threading.Event = threading.Event()
 _status: dict[str, str | bool | None] = {
     "running": False,
     "last_run": None,
@@ -22,12 +22,15 @@ _thread: threading.Thread | None = None
 def _run_in_background() -> None:
     from main import setup_logging, run_pipeline
 
+    _cancel_event.clear()
     try:
         setup_logging()
-        run_pipeline()
-        _status["last_result"] = "Pipeline completed successfully"
+        run_pipeline(cancel_event=_cancel_event)
+        if not _cancel_event.is_set():
+            _status["last_result"] = "Pipeline completed successfully"
     except Exception as exc:
-        _status["last_result"] = f"Pipeline failed: {exc}"
+        if not _cancel_event.is_set():
+            _status["last_result"] = f"Pipeline failed: {exc}"
     finally:
         _status["running"] = False
         _status["last_run"] = datetime.now().isoformat(timespec="seconds")
@@ -48,22 +51,13 @@ def trigger_pipeline() -> dict[str, str]:
 
 @router.post("/cancel-pipeline")
 def cancel_pipeline() -> dict[str, str]:
-    global _thread
     if not _status["running"] or _thread is None or not _thread.is_alive():
         raise HTTPException(status_code=409, detail="No pipeline is running")
 
-    # Raise SystemExit in the pipeline thread to stop it
-    tid: int = _thread.ident
-    if tid is not None:
-        ctypes.pythonapi.PyThreadState_SetAsyncExc(
-            ctypes.c_ulong(tid),
-            ctypes.py_object(SystemExit),
-        )
-
+    _cancel_event.set()
     _status["running"] = False
     _status["last_run"] = datetime.now().isoformat(timespec="seconds")
     _status["last_result"] = "Pipeline cancelled by user"
-    _thread = None
     return {"status": "cancelled"}
 
 
@@ -78,7 +72,7 @@ def clear_logs() -> dict[str, str]:
 
 
 def reset_status() -> None:
-    """Reset pipeline display state. Called when all salary records are deleted."""
+    """Reset pipeline display state. Called when all records are deleted."""
     if not _status["running"]:
         _status["last_run"] = None
         _status["last_result"] = None

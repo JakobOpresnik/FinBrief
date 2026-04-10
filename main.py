@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import sys
+import threading
 from email.message import EmailMessage
 
 from config import Config
@@ -39,86 +40,99 @@ def setup_logging() -> None:
     )
 
 
-def run_pipeline() -> None:
+def run_pipeline(cancel_event: threading.Event | None = None) -> None:
     config: Config = Config.load()
     state: dict = load_state(config.state_file_path)
 
     logger.info("Connecting to Gmail via IMAP...")
     imap = connect(config)
 
-    logger.info("Searching for salary emails...")
-    msg_ids: list[bytes] = search_salary_emails(imap, config)
+    try:
+        logger.info("Searching for salary emails...")
+        msg_ids: list[bytes] = search_salary_emails(imap, config)
 
-    if not msg_ids:
-        logger.info("No salary emails found.")
-        imap.logout()
-        return
+        if not msg_ids:
+            logger.info("No salary emails found.")
+            return
 
-    new_count: int = 0
-    for msg_id in msg_ids:
-        msg: EmailMessage = fetch_message(imap, msg_id)
-        unique_id: str = get_message_id(msg)
+        new_count: int = 0
+        for msg_id in msg_ids:
+            if cancel_event and cancel_event.is_set():
+                logger.info("Pipeline cancelled by user.")
+                return
 
-        if is_processed(state, unique_id):
-            continue
+            msg: EmailMessage = fetch_message(imap, msg_id)
+            unique_id: str = get_message_id(msg)
 
-        new_count += 1
-        logger.info("Processing email: %s", msg.get("Subject", "unknown"))
+            if is_processed(state, unique_id):
+                continue
 
-        attachments: list[tuple[str, bytes]] = download_pdf_attachments(msg)
+            new_count += 1
+            logger.info("Processing email: %s", msg.get("Subject", "unknown"))
 
-        if not attachments:
-            logger.warning("Email has no PDF attachments — skipping (will retry next run)")
-            continue
+            attachments: list[tuple[str, bytes]] = download_pdf_attachments(msg)
 
-        for filename, pdf_bytes in attachments:
-            logger.info("Processing attachment: %s", filename)
+            if not attachments:
+                logger.warning("Email has no PDF attachments — skipping (will retry next run)")
+                continue
 
-            if is_pdf_encrypted(pdf_bytes):
-                if not config.pdf_password:
-                    logger.warning("PDF %s is encrypted but no PDF_PASSWORD is set — skipping", filename)
-                    continue
+            for filename, pdf_bytes in attachments:
+                if cancel_event and cancel_event.is_set():
+                    logger.info("Pipeline cancelled by user.")
+                    return
+
+                logger.info("Processing attachment: %s", filename)
+
+                if is_pdf_encrypted(pdf_bytes):
+                    if not config.pdf_password:
+                        logger.warning("PDF %s is encrypted but no PDF_PASSWORD is set — skipping", filename)
+                        continue
+                    try:
+                        decrypted: bytes = decrypt_pdf(pdf_bytes, config.pdf_password)
+                    except PDFDecryptionError:
+                        logger.exception("Failed to decrypt %s — skipping", filename)
+                        continue
+                else:
+                    decrypted = pdf_bytes
+
                 try:
-                    decrypted: bytes = decrypt_pdf(pdf_bytes, config.pdf_password)
-                except PDFDecryptionError:
-                    logger.exception("Failed to decrypt %s — skipping", filename)
+                    text: str = extract_text(decrypted)
+                except PDFTextExtractionError:
+                    logger.exception("Failed to extract text from %s — skipping", filename)
                     continue
-            else:
-                decrypted = pdf_bytes
 
-            try:
-                text: str = extract_text(decrypted)
-            except PDFTextExtractionError:
-                logger.exception("Failed to extract text from %s — skipping", filename)
-                continue
+                if cancel_event and cancel_event.is_set():
+                    logger.info("Pipeline cancelled by user.")
+                    return
 
-            try:
-                history: list[SalaryData] = get_salary_history(state)
-                result: AnalysisResult = analyze(text, config, history)
-            except Exception:
-                logger.exception("AI analysis failed for %s — saving PDF without analysis", filename)
-                mark_processed(state, unique_id)
+                try:
+                    history: list[SalaryData] = get_salary_history(state)
+                    result: AnalysisResult = analyze(text, config, history)
+                except Exception:
+                    logger.exception("AI analysis failed for %s — saving PDF without analysis", filename)
+                    mark_processed(state, unique_id)
+                    save_state(state, config.state_file_path)
+                    continue
+
+                saved_path: str = save_pdf(pdf_bytes, config, result.salary_data)
+                logger.info("Saved PDF to: %s", saved_path)
+
+                try:
+                    notify(result, saved_path, config)
+                except Exception:
+                    logger.exception("Notification failed — PDF was saved successfully")
+
+                mark_processed(state, unique_id, result.salary_data, raw_text=text)
                 save_state(state, config.state_file_path)
-                continue
+                logger.info("Summary: %s", result.summary)
 
-            saved_path: str = save_pdf(pdf_bytes, config, result.salary_data)
-            logger.info("Saved PDF to: %s", saved_path)
+        if new_count == 0:
+            logger.info("No new salary emails to process.")
+        else:
+            logger.info("Done — processed %d new %s.", new_count, "email" if new_count == 1 else "emails")
 
-            try:
-                notify(result, saved_path, config)
-            except Exception:
-                logger.exception("Notification failed — PDF was saved successfully")
-
-            mark_processed(state, unique_id, result.salary_data, raw_text=text)
-            save_state(state, config.state_file_path)
-            logger.info("Summary: %s", result.summary)
-
-    imap.logout()
-
-    if new_count == 0:
-        logger.info("No new salary emails to process.")
-    else:
-        logger.info("Done — processed %d new %s.", new_count, "email" if new_count == 1 else "emails")
+    finally:
+        imap.logout()
 
 
 def main() -> None:
