@@ -45,14 +45,14 @@ FinBrief connects to Gmail via IMAP using an **App Password** — a special one-
 
 1. Go to [myaccount.google.com](https://myaccount.google.com) and sign in.
 2. Open **Security** in the left sidebar.
-3. Under *How you sign in to Google*, click **2-Step Verification** and follow the prompts to turn it on.
+3. Under _How you sign in to Google_, click **2-Step Verification** and follow the prompts to turn it on.
 
 **Step 2 — Enable IMAP in Gmail**
 
 1. Open [Gmail](https://mail.google.com) in your browser.
 2. Click the gear icon (top-right) → **See all settings**.
 3. Go to the **Forwarding and POP/IMAP** tab.
-4. Under *IMAP Access*, select **Enable IMAP**.
+4. Under _IMAP Access_, select **Enable IMAP**.
 5. Click **Save Changes**.
 
 **Step 3 — Create an App Password**
@@ -135,16 +135,14 @@ FinBrief connects to Gmail via IMAP using an **App Password** — a special one-
    2. Open the app and tap the **+** button to subscribe to a new topic.
    3. Enter a topic name that is unique and hard to guess (e.g. `finbrief-john-doe-2024`). Anyone who knows your topic name can read your notifications, so avoid obvious names.
    4. Tap **Subscribe**.
-   
+
    **In FinBrief:**
-   
    5. Set `NTFY_TOPIC` in your `.env` to the exact same topic name you entered in step 3.
-   
-   6. Alternatively, open **Settings** inside the app and enter the topic name in the *Notifications* section — no restart needed.
-   
+   6. Alternatively, open **Settings** inside the app and enter the topic name in the _Notifications_ section — no restart needed.
+
    From that point on, every time the pipeline runs, FinBrief will POST a notification to `https://ntfy.sh/<your-topic>` and it will appear on your phone instantly. Each notification includes the take-home breakdown, gross pay, and saved file path. Anomaly alerts are triggered when net or gross pay deviates more than 10% from your recent average, when an individual deduction spikes more than 50% above its recent average, or when a new deduction category appears for the first time.
 
-6. **Download the LLM model**
+7. **Download the LLM model**
 
    The app uses [Qwen2.5 3B Instruct (Q4_K_M)](https://huggingface.co/Qwen/Qwen2.5-3B-Instruct-GGUF) — a fast, lightweight model that runs well on CPU. Download it directly into the `models/` directory:
 
@@ -158,7 +156,7 @@ FinBrief connects to Gmail via IMAP using an **App Password** — a special one-
    LLM_MODEL_PATH=models/qwen2.5-3b-instruct-q4_k_m.gguf
    ```
 
-7. **Run the app**
+8. **Run the app**
 
    ```bash
    python app.py
