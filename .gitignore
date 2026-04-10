@@ -6,6 +6,9 @@ token.json
 # State
 processed_emails.json
 
+# Testing
+testing/
+
 # Models
 models/*.gguf
 
