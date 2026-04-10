@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+import logging
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routes import logs, pipeline, salary, schedule, settings
 from api.scheduler import init_scheduler, shutdown_scheduler
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 FRONTEND_DIR: Path = Path(__file__).parent.parent / "frontend" / "dist"
 
@@ -30,6 +33,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "An unexpected error occurred"},
+    )
+
 
 app.include_router(salary.router, prefix="/api")
 app.include_router(pipeline.router, prefix="/api")
