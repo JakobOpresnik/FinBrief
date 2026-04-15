@@ -162,20 +162,17 @@ FinBrief connects to Gmail via IMAP using an **App Password** — a special one-
    LLM_MODEL_PATH=models/qwen2.5-3b-instruct-q4_k_m.gguf
    ```
 
-<<<<<<< HEAD 8. **Run the app**
-======= 9. **Run the app**
+8. **Run the app**
 
-> > > > > > > 3065efa1d53520d0f42777c42d9256c5c2529946
+   ```bash
+   python app.py
+   ```
 
-```bash
-python app.py
-```
+   The app opens in a native desktop window. To run in dev mode (API only, no window):
 
-The app opens in a native desktop window. To run in dev mode (API only, no window):
-
-```bash
-python app.py --dev
-```
+   ```bash
+   python app.py --dev
+   ```
 
 ## 🧪 Running Tests
 
